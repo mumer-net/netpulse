@@ -6,7 +6,9 @@ time-to-alert, and an auto-generated shift-handoff report.
 
 ![CI](https://github.com/mumer-net/netpulse/actions/workflows/ci.yml/badge.svg)
 
-<!-- ![demo](docs/demo.gif)  (uncomment once docs/demo.gif exists) -->
+![Live demo: a transit link is cut, alerts fire in about a second, and the network recovers](docs/demo.gif)
+
+*Grafana during `chaos.py`: four injected link failures, each detected and cleared on its own (sped up 1.5×).*
 
 ## Results
 
