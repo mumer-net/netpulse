@@ -6,7 +6,7 @@ Window 2026-09-28 07:25:29 to 2026-09-28 07:31:29 UTC · incidents: 1 · still o
 
 | Alert | Where | Since (UTC) | Runbook |
 | --- | --- | --- | --- |
-| BGPSessionDown | b1 peer 10.0.6.1 | 2026-09-28 07:30:44 | [runbook](https://github.com/YOUR_USER/netpulse/blob/main/runbooks/BGPSessionDown.md) |
+| BGPSessionDown | b1 peer 10.0.6.1 | 2026-09-28 07:30:44 | [runbook](https://github.com/mumer-net/netpulse/blob/main/runbooks/BGPSessionDown.md) |
 
 ## Resolved this shift
 

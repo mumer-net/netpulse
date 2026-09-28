@@ -4,7 +4,7 @@ A 6-router OSPF/BGP lab, defined as code, that watches itself: gNMI telemetry in
 Prometheus and Grafana, alerts linked to runbooks, a chaos runner that measures
 time-to-alert, and an auto-generated shift-handoff report.
 
-![CI](https://github.com/YOUR_USER/netpulse/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/mumer-net/netpulse/actions/workflows/ci.yml/badge.svg)
 
 <!-- ![demo](docs/demo.gif)  (uncomment once docs/demo.gif exists) -->
 

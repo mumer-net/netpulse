@@ -8,7 +8,7 @@ groups:
           severity: critical
         annotations:
           summary: "BGP session {{ $labels.source }} -> {{ $labels.neighbor_neighbor_address }} is not Established"
-          runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/BGPSessionDown.md"
+          runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/BGPSessionDown.md"
 
       - alert: InterfaceDown
         expr: netpulse_intf_oper_status{interface_name=~"Ethernet.*"} == 0
@@ -17,7 +17,7 @@ groups:
           severity: critical
         annotations:
           summary: "{{ $labels.source }} {{ $labels.interface_name }} is down"
-          runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/InterfaceDown.md"
+          runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/InterfaceDown.md"
 
       # No data is not good data: if gNMIc dies, metrics expire and the rules above go silent.
       - alert: TelemetryDown
@@ -27,4 +27,4 @@ groups:
           severity: warning
         annotations:
           summary: "Telemetry gap: gNMIc is down or fewer than 4 routers are reporting"
-          runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/TelemetryDown.md"
+          runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/TelemetryDown.md"

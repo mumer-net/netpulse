@@ -27,14 +27,14 @@ tests:
           - exp_labels: {severity: critical, source: a1, neighbor_neighbor_address: "10.0.4.1"}
             exp_annotations:
               summary: "BGP session a1 -> 10.0.4.1 is not Established"
-              runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/BGPSessionDown.md"
+              runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/BGPSessionDown.md"
       - eval_time: 6s
         alertname: InterfaceDown
         exp_alerts:
           - exp_labels: {severity: critical, source: a1, interface_name: Ethernet2}
             exp_annotations:
               summary: "a1 Ethernet2 is down"
-              runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/InterfaceDown.md"
+              runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/InterfaceDown.md"
       - eval_time: 8s
         alertname: TelemetryDown
         exp_alerts: []
@@ -62,4 +62,4 @@ tests:
           - exp_labels: {severity: warning, job: gnmic}
             exp_annotations:
               summary: "Telemetry gap: gNMIc is down or fewer than 4 routers are reporting"
-              runbook_url: "https://github.com/YOUR_USER/netpulse/blob/main/runbooks/TelemetryDown.md"
+              runbook_url: "https://github.com/mumer-net/netpulse/blob/main/runbooks/TelemetryDown.md"
