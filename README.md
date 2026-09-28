@@ -175,6 +175,17 @@ Done in v2: on-change telemetry and BFD, each measured against the baseline. Nex
 failure scenario (a1–a2 link), OSPF adjacency and prefix-count alerts, a transit-side view with
 frr_exporter, and Batfish checks on configs in CI.
 
+## Build notes
+
+I set the goal and the experiment: measure time-to-alert, find what sets it, then reduce it. I
+deployed and debugged the lab on my own Mac, broke each failure by hand before automating it, and
+ran all 180 measured failures. The runbooks' "What I saw" sections are my real drill output.
+
+The first full run turned out to be phase-locked to the telemetry cycle: every BGP-shutdown time
+landed between 0.80 and 0.92 s, far too tight for failures that happen at random moments. That run
+is kept in [`results/v0-phase-locked/`](results/v0-phase-locked), the runner now waits a random
+0-4 s before each injection, and every number above comes from the re-runs.
+
 ## License
 
 MIT. Lab-only credentials (admin/admin); never reuse them.
