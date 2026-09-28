@@ -1,38 +1,44 @@
-# Setup and build checklist (run inside the `clab` machine unless noted)
+# Setup
 
-## 1. Machine (on the Mac)
+How I run NetPulse on an Apple silicon Mac. Everything after step 1 runs inside the Linux VM.
+
+## 1. Linux VM (on the Mac)
+    brew install orbstack
     orb create ubuntu clab
-    ssh clab@orb
+    orb -m clab
 
-## 2. containerlab, Docker, tools (inside clab)
+## 2. containerlab and Docker
     curl -sL https://containerlab.dev/setup | sudo -E bash -s "all"
-    sudo usermod -aG docker $USER && exit      # then: ssh clab@orb
-    containerlab version                       # expect 0.79.x
-    sudo apt-get update && sudo apt-get install -y python3-venv jq git make unzip
+    containerlab version                       # 0.79.x
+    # On Ubuntu 26.04 the setup script skipped Docker; Ubuntu's package works:
+    sudo apt-get install -y docker.io python3-venv jq git make
+    sudo usermod -aG docker,clab_admins $USER  # then log out and back in
 
-## 3. Arista image (file is in the Mac's Downloads)
-    sudo docker import /mnt/mac/Users/umer/Downloads/cEOSarm-lab-4.36.2F.tar.xz ceos:4.36.2F
-    docker image inspect ceos:4.36.2F -f '{{.Architecture}}'    # expect arm64
+## 3. Arista cEOS (free account at arista.com, Software Downloads -> cEOS-lab)
+Download the ARM build (`cEOSarm-lab-...tar.xz`, not `cEOS64-lab`), then:
 
-## 4. Other images + gnmic CLI
+    docker import /Users/<you>/Downloads/cEOSarm-lab-4.36.2F.tar.xz ceos:4.36.2F   # Mac files appear under /Users
+    docker image inspect ceos:4.36.2F -f '{{.Architecture}}'           # arm64
+
+## 4. Other images and the gnmic CLI
     for img in quay.io/frrouting/frr:10.7.1 ghcr.io/openconfig/gnmic:0.49.0 \
       prom/prometheus:v3.14.0 prom/alertmanager:v0.34.1 grafana/grafana:13.2.2 python:3.13-slim; do
       docker pull "$img"
     done
     bash -c "$(curl -sL https://get-gnmic.openconfig.net)"
 
-## 5. Repo
-    cd ~ && unzip /mnt/mac/Users/umer/Downloads/netpulse.zip && cd ~/netpulse
+## 5. Clone, test, deploy
+    git clone https://github.com/mumer-net/netpulse.git && cd netpulse
     python3 -m venv .venv && . .venv/bin/activate && pip install pytest ruff pyyaml jsonschema
     make test
-    git init && git add -A && git commit -m "chore: NetPulse lab as code"
+    make deploy          # cEOS needs ~2-3 minutes to boot
 
-## Checkpoints
-1. Routers: `make deploy`; after ~2 min, in `docker exec -it clab-netpulse-a1 Cli`:
-   `show ip ospf neighbor` (FULL), `show ip bgp summary` (2 Estab), `ping 10.255.2.1 source Loopback0`.
-2. Telemetry: `curl -s http://172.20.20.101:9804/metrics | grep ^netpulse_` shows labels
-   `source`, `neighbor_neighbor_address`, `interface_name`; Prometheus `sum(netpulse_bgp_session_state)` = 8.
-3. Fire drill: `docker exec clab-netpulse-t1 ip link set eth1 down`, watch Grafana + `tail -f results/alerts.jsonl`, then `... up`.
-4. Chaos: `make chaos-dry`, `make chaos-smoke` (2 x "ok"), then `caffeinate -dims` on the Mac and `make chaos`.
-5. Handoff: `make handoff`, copy one report to `docs/sample-handoff.md`.
-6. Publish: `make set-user GH=<username>`, push, CI green, fill README numbers from `results/summary.json`.
+## Checks, bottom layer up
+1. Routing: `docker exec -it clab-netpulse-a1 Cli -c "show ip bgp summary"` shows 2 peers Estab;
+   `docker exec -it clab-netpulse-a1 Cli -p 15 -c "ping 10.255.2.1 source Loopback0"` crosses transit.
+2. BFD: `docker exec -it clab-netpulse-a1 Cli -c "show bfd peers"` shows the transit peer Up.
+3. Telemetry: `curl -s http://172.20.20.101:9804/metrics | grep ^netpulse_`; in Prometheus,
+   `sum(netpulse_bgp_session_state)` is 8.
+4. Grafana: http://localhost:3000/d/netpulse (no login).
+5. Measure: `make chaos-dry`, `make chaos-smoke`, then `make chaos` with nothing heavy running on the Mac
+   (`caffeinate -dims` keeps it awake).

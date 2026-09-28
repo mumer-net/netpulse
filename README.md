@@ -1,14 +1,29 @@
 # NetPulse
 
-A 6-router OSPF/BGP lab, defined as code, that watches itself: gNMI telemetry into
-Prometheus and Grafana, alerts linked to runbooks, a chaos runner that measures
-time-to-alert, and an auto-generated shift-handoff report.
+A six-router OSPF/BGP network that runs in containers on a laptop and monitors itself. Routers stream
+their state over gNMI into Prometheus and Grafana, alerts link straight to a runbook, a chaos script
+breaks things on purpose and times how long the alert takes, and a script writes the shift-handoff report.
+
+**Result:** a failure on the provider side is alerted in under 1 s (median 0.97 s, p95 1.53 s,
+down from 4.89 s in the first version), measured across 180 injected failures with every one detected.
+
+**Stack:** Containerlab, Arista cEOS, FRR, OSPF, BGP, BFD, gNMI (gNMIc), Prometheus, Alertmanager,
+Grafana, Python, GitHub Actions
 
 ![CI](https://github.com/mumer-net/netpulse/actions/workflows/ci.yml/badge.svg)
 
 ![Live demo: a transit link is cut, alerts fire in about a second, and the network recovers](docs/demo.gif)
 
-*Grafana during `chaos.py`: four injected link failures, each detected and cleared on its own (sped up 1.5×).*
+*Grafana during `chaos.py`: four injected link failures, each detected and cleared on its own (sped up 1.5x).*
+
+## Why I built this
+
+During my internship at Cisco I worked alongside the engineers deploying new switches, and a lot of
+the verification was done by hand, one check at a time. I also sat in on follow-the-sun handoffs,
+where the team in one region briefs the next region on what's still open before going offline. Both
+made me want to see how much of that could be automated, and whether I could put a real number on
+how fast a network notices its own failures. NetPulse is that experiment, built on my own time with
+public tools. It contains no Cisco code, configs, or data.
 
 ## Results
 
@@ -24,27 +39,27 @@ time-to-alert, and an auto-generated shift-handoff report.
 
 Median time-to-alert (p95 in brackets), 20 runs per cell, 60/60 detected in every configuration.
 
-- **v1 → v2 cut p95 time-to-alert 69% (4.89 s → 1.53 s)** and the worst case from 5.74 s to 1.69 s.
+- **v1 → v2 cut p95 time-to-alert by 69% (4.89 s → 1.53 s)** and the worst case from 5.74 s to 1.69 s.
 - **On-change streaming** removed the wait for the next 2 s telemetry sample: medians roughly halved.
 - **BFD** replaced the 3 s BGP hold timer as the silent-failure detector: silent-loss p95 fell 72%
   (5.65 s → 1.57 s), so a silent failure is now caught about as fast as a cable pull.
 
 Raw data: [`results/v1/`](results/v1), [`results/v2a/`](results/v2a), [`results/v2/`](results/v2).
-Sample shift-handoff report written during a live incident: [`docs/sample-handoff.md`](docs/sample-handoff.md).
+Sample shift-handoff report, generated while a BGP incident was still open: [`docs/sample-handoff.md`](docs/sample-handoff.md).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph SA["Site A · AS 65001 · OSPF"]
+  subgraph SA["Site A - AS 65001 - OSPF"]
     a1["a1<br/>Arista cEOS"]
     a2["a2<br/>Arista cEOS"]
   end
-  subgraph TR["Transit · AS 65000 · OSPF"]
+  subgraph TR["Transit - AS 65000 - OSPF"]
     t1["t1<br/>FRR"]
     t2["t2<br/>FRR"]
   end
-  subgraph SB["Site B · AS 65002 · OSPF"]
+  subgraph SB["Site B - AS 65002 - OSPF"]
     b1["b1<br/>Arista cEOS"]
     b2["b2<br/>Arista cEOS"]
   end
@@ -102,7 +117,7 @@ provider, so their failures have to be detected from your own side. That's what 
 | Setting | v1 | v2 | Why |
 | --- | --- | --- | --- |
 | BGP keepalive / hold | 1 s / 3 s | 1 s / 3 s | Backstop; 180 s by default |
-| BFD on eBGP links | none | 100 ms × 3 | Silent failure detected in ~300 ms instead of the 3 s hold timer |
+| BFD on eBGP links | none | 100 ms x 3 | Silent failure detected in ~300 ms instead of the 3 s hold timer |
 | OSPF hello / dead (p2p) | 1 s / 4 s | 1 s / 4 s | Fast adjacency loss, no DR election |
 | gNMI subscription | sample every 2 s | on-change, 10 s heartbeat | Router pushes a change the moment it happens |
 | Prometheus scrape / eval | 2 s / 2 s | 1 s / 1 s | Shorter waits in the pipeline |
@@ -112,15 +127,17 @@ provider, so their failures have to be detected from your own side. That's what 
 **Latency model:** t_alert = t_detect + Δsample + Δscrape + Δeval + Δnotify.
 
 - v1: each 2 s wait averages ~1 s, so a ~3 s median was predicted when the router notices instantly.
-  Measured 1.7–1.9 s: the waits overlap more favourably than the independent-average model assumes.
+  Measured 1.7–1.9 s. My current explanation: Prometheus runs the scrape and the rule evaluation at
+  fixed offsets from each other, so those two waits aren't independent and don't add up to their
+  averages. I haven't isolated this yet; it's the next thing I'd measure.
   Silent loss adds t_detect ≈ 3 s (hold timer): predicted ~5–6 s, measured 4.3 s median, 5.7 s max.
 - v2: Δsample ≈ 0 (on-change), Δscrape + Δeval average ~1 s total, t_detect ≈ 0.3 s for silent loss
   (BFD). Measured ~0.9–1.0 s medians for all three failure types.
 
 ## Run it
 
-Needs an Apple silicon Mac with OrbStack, an Ubuntu machine with containerlab 0.79, and the
-`cEOSarm-lab-4.36.2F` image imported as `ceos:4.36.2F`.
+Built and measured on an Apple silicon Mac (OrbStack Ubuntu VM, containerlab 0.79) with the
+`cEOSarm-lab-4.36.2F` image imported as `ceos:4.36.2F`. Full setup: [`docs/SETUP.md`](docs/SETUP.md).
 
 ```bash
 make deploy          # 6 routers + gNMIc, Prometheus, Alertmanager, Grafana, receiver

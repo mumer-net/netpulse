@@ -2,8 +2,8 @@
 
 **Fires when:** a site router reports an Ethernet interface that is not up
 (`netpulse_intf_oper_status{interface_name=~"Ethernet.*"} == 0`).
-**Impact:** Ethernet2 down = one transit path lost (its BGPSessionDown fires too, within the 3 s
-hold timer). Ethernet1 down = the site's internal link is lost, OSPF drops, and the site's iBGP
+**Impact:** Ethernet2 down = one transit path lost (its BGPSessionDown fires at the same moment,
+because the session drops with the interface). Ethernet1 down = the site's internal link is lost, OSPF drops, and the site's iBGP
 session follows.
 
 ## Check
@@ -17,7 +17,7 @@ session follows.
 | What you see | Cause | Fix (lab) |
 | --- | --- | --- |
 | Far end `state DOWN` / admin down | Port shut on the far side | `docker exec clab-netpulse-<transit> ip link set <iface> up` |
-| Both ends up, but alert still firing | Telemetry lag or stale series | Wait one sample (2 s); if it persists, check [TelemetryDown](TelemetryDown.md) |
+| Both ends up, but alert still firing | Telemetry lag or stale series | Wait a few seconds for the next update; if it persists, check [TelemetryDown](TelemetryDown.md) |
 | Container gone | Node crashed | `sudo containerlab inspect -t netpulse.clab.yml`; redeploy the node |
 
 ## What I saw when I broke it by hand

@@ -1,7 +1,7 @@
-# Recipes start with ">" instead of a tab, so copy-paste can't break them.
+# Recipes use ">" instead of a tab (.RECIPEPREFIX).
 .RECIPEPREFIX = >
 LAB := netpulse.clab.yml
-.PHONY: deploy redeploy destroy status chaos chaos-smoke chaos-dry handoff test clear-alerts set-user
+.PHONY: deploy redeploy destroy status chaos chaos-smoke chaos-dry handoff test clear-alerts
 
 deploy:
 > sudo containerlab deploy -t $(LAB)
@@ -23,8 +23,3 @@ test:
 > ruff check tools tests && pytest -q
 clear-alerts:
 > sudo rm -f results/alerts.jsonl
-# make set-user GH=your-github-username   (fills every YOUR_USER placeholder)
-set-user:
-> test -n "$(GH)" || (echo "usage: make set-user GH=<github-username>" && exit 1)
-> grep -rl YOUR_USER --exclude=Makefile --exclude-dir=.git --exclude-dir=.venv . | xargs sed -i "s/YOUR_USER/$(GH)/g"
-> echo "Replaced YOUR_USER with $(GH)"
