@@ -7,4 +7,4 @@ datasources:
     url: http://172.20.20.102:9090
     isDefault: true
     jsonData:
-      timeInterval: 2s
+      timeInterval: 1s
