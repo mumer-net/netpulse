@@ -1,0 +1,30 @@
+{
+  "link_down": {
+    "runs": 20,
+    "detected": 20,
+    "median_s": 0.77,
+    "p95_s": 1.39,
+    "max_s": 1.4
+  },
+  "bgp_shutdown": {
+    "runs": 20,
+    "detected": 20,
+    "median_s": 0.87,
+    "p95_s": 1.29,
+    "max_s": 1.33
+  },
+  "silent_loss": {
+    "runs": 20,
+    "detected": 20,
+    "median_s": 3.39,
+    "p95_s": 3.9,
+    "max_s": 4.16
+  },
+  "all": {
+    "runs": 60,
+    "detected": 60,
+    "median_s": 1.2,
+    "p95_s": 3.83,
+    "max_s": 4.16
+  }
+}
