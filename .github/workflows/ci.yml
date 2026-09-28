@@ -1,0 +1,28 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Lint and unit tests
+        run: |
+          pip install pytest ruff pyyaml jsonschema
+          ruff check tools tests
+          pytest -q
+      - name: Topology matches containerlab's schema
+        run: python tests/check_topology.py
+      - name: Prometheus config, rules, and rule unit tests
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint promtool prom/prometheus:v3.14.0 \
+            check rules telemetry/prometheus/rules.yml
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint promtool prom/prometheus:v3.14.0 \
+            test rules tests/rules_test.yml
+      - name: Alertmanager config
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint amtool prom/alertmanager:v0.34.1 \
+            check-config telemetry/alertmanager.yml

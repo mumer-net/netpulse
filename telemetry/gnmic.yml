@@ -1,0 +1,63 @@
+# gNMIc: stream state from the four cEOS routers, turn it into numbers, expose it to Prometheus.
+username: admin
+password: admin
+port: 6030
+insecure: true
+timeout: 10s
+encoding: json_ietf
+log: true
+
+targets:
+  a1: {address: "172.20.20.11:6030"}
+  a2: {address: "172.20.20.12:6030"}
+  b1: {address: "172.20.20.21:6030"}
+  b2: {address: "172.20.20.22:6030"}
+
+subscriptions:
+  bgp:
+    paths:
+      - /network-instances/network-instance[name=default]/protocols/protocol[identifier=BGP][name=BGP]/bgp/neighbors/neighbor/state/session-state
+    mode: stream
+    stream-mode: sample
+    sample-interval: 2s
+  intf:
+    paths:
+      - /interfaces/interface/state/oper-status
+    mode: stream
+    stream-mode: sample
+    sample-interval: 2s
+
+outputs:
+  prom:
+    type: prometheus
+    listen: :9804
+    path: /metrics
+    metric-prefix: netpulse
+    append-subscription-name: true
+    expiration: 30s
+    event-processors:
+      - bgp-state-to-number
+      - oper-status-to-number
+      - short-names
+
+processors:
+  # Prometheus stores numbers only: ESTABLISHED -> 1, every other BGP state -> 0.
+  bgp-state-to-number:
+    event-strings:
+      value-names: [".*session-state$"]
+      transforms:
+        - replace: {apply-on: "value", old: "^ESTABLISHED$", new: "1"}
+        - replace: {apply-on: "value", old: "^(IDLE|CONNECT|ACTIVE|OPENSENT|OPENCONFIRM)$", new: "0"}
+  # UP -> 1, anything else -> 0. Patterns are anchored so DOWN can't half-match LOWER_LAYER_DOWN.
+  oper-status-to-number:
+    event-strings:
+      value-names: [".*oper-status$"]
+      transforms:
+        - replace: {apply-on: "value", old: "^UP$", new: "1"}
+        - replace: {apply-on: "value", old: "^(DOWN|LOWER_LAYER_DOWN|NOT_PRESENT|DORMANT|TESTING|UNKNOWN)$", new: "0"}
+  # Keep only the last path element: netpulse_bgp_session_state, netpulse_intf_oper_status.
+  short-names:
+    event-strings:
+      value-names: [".*"]
+      transforms:
+        - path-base: {apply-on: "name"}

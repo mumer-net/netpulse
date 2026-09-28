@@ -1,0 +1,10 @@
+clab-*/
+.*.clab.yml.bak
+results/*.jsonl
+results/dry-run.csv
+results/handoff-*.md
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.mov

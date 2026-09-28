@@ -1,0 +1,12 @@
+route:
+  receiver: netpulse-webhook
+  group_by: ['...']        # every alert is its own group
+  group_wait: 0s           # the default is 30s, which would add 30s to every measurement
+  group_interval: 5s
+  repeat_interval: 4h
+
+receivers:
+  - name: netpulse-webhook
+    webhook_configs:
+      - url: http://172.20.20.105:9095/alert
+        send_resolved: true
