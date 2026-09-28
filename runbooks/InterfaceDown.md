@@ -21,7 +21,15 @@ session follows.
 | Container gone | Node crashed | `sudo containerlab inspect -t netpulse.clab.yml`; redeploy the node |
 
 ## What I saw when I broke it by hand
-<!-- Fill in after the Phase 2 fire drill (`ip link set eth1 down` on t1). -->
+Fire drill, 2026-09-28: `docker exec clab-netpulse-t1 ip link set eth1 down` (t1's side of link 4).
+
+- Both alerts arrived within 3 ms of each other, for a1 only:
+  `InterfaceDown` (a1 Ethernet2) and `BGPSessionDown` (a1 -> 10.0.4.1).
+- `show interfaces Ethernet2` on a1: `Ethernet2 is down, line protocol is down (notconnect)`.
+  a1 sees the far end disappear even though only t1's side was shut.
+- `show ip bgp summary` on a1: t1-transit (10.0.4.1) in `Idle(NoIf)`; the a2 iBGP session stayed
+  `Estab`, so site A kept its path to transit through a2.
+- After `ip link set eth1 up`, both alerts resolved together. Total outage: 66 s (05:39:21 to 05:40:27 UTC).
 
 ## Verify
 - `show interfaces <interface>` is up/up, the matching BGP session is Estab again,

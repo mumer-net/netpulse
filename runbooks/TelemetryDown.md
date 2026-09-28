@@ -19,7 +19,9 @@ silent instead of firing. No data is not good data: treat the network as unverif
 | All routers missing, gNMIc up | Wrong credentials or port in `gnmic.yml` | Fix `telemetry/gnmic.yml`, then `docker restart clab-netpulse-gnmic` |
 
 ## What I saw when I broke it by hand
-<!-- Fill in after stopping gNMIc once: `docker stop clab-netpulse-gnmic`, wait 15 s, `docker start ...`. -->
+First deploy, 2026-09-28: TelemetryDown fired at 05:31:15 UTC while the four cEOS routers were still
+booting (fewer than 4 reporting) and resolved on its own at 05:31:55 once all four streamed data.
+Expected after every fresh deploy; if it lasts more than ~3 minutes, work through the checks above.
 
 ## Verify
 - `sum(netpulse_bgp_session_state)` is back to 8 and the alert resolves.

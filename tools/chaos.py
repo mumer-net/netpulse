@@ -1,6 +1,7 @@
 """NetPulse chaos runner: break the transit side, time how long until the right alert arrives.
 
-Each run: wait until the lab is healthy, note t0, inject one failure, wait for the matching
+Each run: wait until the lab is healthy, wait a random 0-4 s (so failures don't line up with the
+2 s telemetry cycles), note t0, inject one failure, wait for the matching
 alert in results/alerts.jsonl, record (received_at - t0), restore, cool down, repeat.
 """
 
@@ -10,6 +11,7 @@ import argparse
 import csv
 import json
 import math
+import random
 import statistics
 import subprocess
 import time
@@ -184,12 +186,16 @@ def main() -> None:
     parser.add_argument("--prometheus", default=PROMETHEUS)
     parser.add_argument("--timeout", type=float, default=60, help="seconds to wait for each alert")
     parser.add_argument("--cooldown", type=float, default=5)
+    parser.add_argument("--jitter", type=float, default=4.0,
+                        help="random 0..N s wait before each injection, so t0 isn't phase-locked to the 2 s cycles")
+    parser.add_argument("--seed", type=int, default=None, help="seed the jitter for a reproducible schedule")
     parser.add_argument("--dry-run", action="store_true", help="print commands, touch nothing")
     args = parser.parse_args()
 
     if args.dry_run:
         args.out = args.out.with_name("dry-run.csv")  # never overwrite real measurements
 
+    rng = random.Random(args.seed)
     rows: list[dict] = []
     summary: dict = {}
     for scenario in args.scenarios.split(","):
@@ -199,6 +205,11 @@ def main() -> None:
             print(f"[{scenario} {i + 1}/{args.runs}] {target.transit}:{target.transit_iface} -> expect {expect}")
             if not args.dry_run and not wait_healthy(args.prometheus, timeout=120):
                 raise SystemExit("Lab never became healthy; fix it before measuring.")
+            if not args.dry_run:
+                # Health is observed right after a Prometheus evaluation, so injecting immediately would
+                # always land at the same point in the sample/scrape/eval cycles. A random wait spreads t0
+                # uniformly across those cycles, so the distribution reflects real, unsynchronized failures.
+                time.sleep(rng.uniform(0, args.jitter))
             offset = args.alerts.stat().st_size if args.alerts.exists() else 0
             t0 = time.time()  # stamped immediately before injection
             took: float | None = None
