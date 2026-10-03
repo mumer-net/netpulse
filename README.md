@@ -177,9 +177,8 @@ frr_exporter, and Batfish checks on configs in CI.
 
 ## Build notes
 
-I set the goal and the experiment: measure time-to-alert, find what sets it, then reduce it. I
-deployed and debugged the lab on my own Mac, broke each failure by hand before automating it, and
-ran all 180 measured failures. The runbooks' "What I saw" sections are my real drill output.
+I broke each failure by hand before automating it, and the "What I saw" sections in the runbooks
+are my real drill output.
 
 The first full run turned out to be phase-locked to the telemetry cycle: every BGP-shutdown time
 landed between 0.80 and 0.92 s, far too tight for failures that happen at random moments. That run
